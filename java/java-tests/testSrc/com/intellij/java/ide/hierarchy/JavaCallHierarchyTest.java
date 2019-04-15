@@ -62,6 +62,30 @@ public class JavaCallHierarchyTest extends HierarchyViewTestBase {
     doJavaCallTypeHierarchyTest("A", "recursive", "A.java");
   }
 
+  public void testIndirectSubtypeRestriction() throws Exception {
+    doJavaCallTypeHierarchyTest("InterestingProcessor", "processItem", "A.java");
+  }
+
+  public void testIndirectSubtypeRestriction_TwoSteps() throws Exception {
+    doJavaCallTypeHierarchyTest("InterestingProcessor", "processItem", "A.java");
+  }
+
+  public void testIndirectSubtypeRestriction_MultipleUses() throws Exception {
+    doJavaCallTypeHierarchyTest("InterestingProcessor", "processItem", "A.java");
+  }
+
+  public void testIndirectSubtypeRestriction_QualifiedWithThis() throws Exception {
+    doJavaCallTypeHierarchyTest("InterestingProcessor", "processItem", "A.java");
+  }
+
+  public void testIndirectSubtypeRestriction_SampleFromAnna() throws Exception {
+    doJavaCallTypeHierarchyTest("B", "m", "A.java", "B.java", "C.java", "D.java");
+  }
+
+  public void testIndirectSubtypeRestriction_SampleFromAnna_NoSuper() throws Exception {
+    doJavaCallTypeHierarchyTest("B", "m", "A.java");
+  }
+
   public void testIndirectRecursion() throws Exception {
     doJavaCallTypeHierarchyTest("A", "recursive2", "A.java");
   }

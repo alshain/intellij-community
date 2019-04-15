@@ -17,10 +17,8 @@ package com.intellij.ide.hierarchy.call;
 
 import com.intellij.ide.util.treeView.NodeDescriptor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiClassType;
-import com.intellij.psi.PsiMember;
-import com.intellij.psi.PsiMethod;
+import com.intellij.openapi.util.Pair;
+import com.intellij.psi.*;
 
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +30,7 @@ public class JavaCallHierarchyData {
   private final PsiMethod myMethod;
   private final Set<PsiMethod> myMethodsToFind;
   private final NodeDescriptor myNodeDescriptor;
-  private final Map<PsiMember, NodeDescriptor> myResultMap;
+  private final Map<Pair<PsiMember, PsiType>, NodeDescriptor> myResultMap;
   private final Project myProject;
 
   public JavaCallHierarchyData(PsiClass originalClass,
@@ -41,7 +39,7 @@ public class JavaCallHierarchyData {
                                PsiMethod method,
                                Set<PsiMethod> methodsToFind,
                                NodeDescriptor nodeDescriptor,
-                               Map<PsiMember, NodeDescriptor> resultMap,
+                               Map<Pair<PsiMember, PsiType>, NodeDescriptor> resultMap,
                                Project project) {
 
     myOriginalClass = originalClass;
@@ -78,7 +76,7 @@ public class JavaCallHierarchyData {
     return myNodeDescriptor;
   }
 
-  public Map<PsiMember, NodeDescriptor> getResultMap() {
+  public Map<Pair<PsiMember, PsiType>, NodeDescriptor> getResultMap() {
     return myResultMap;
   }
 

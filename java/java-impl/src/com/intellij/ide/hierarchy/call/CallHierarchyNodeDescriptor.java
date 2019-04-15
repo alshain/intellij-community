@@ -40,6 +40,8 @@ public final class CallHierarchyNodeDescriptor extends HierarchyNodeDescriptor i
     myNavigateToReference = navigateToReference;
   }
 
+  public JavaCallHierarchyData dataFromInstanceCall;
+
   /**
    * @return PsiMethod or PsiClass or JspFile
    */

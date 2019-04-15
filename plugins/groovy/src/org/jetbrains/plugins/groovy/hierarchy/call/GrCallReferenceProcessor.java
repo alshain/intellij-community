@@ -20,6 +20,7 @@ import com.intellij.ide.hierarchy.call.CallReferenceProcessor;
 import com.intellij.ide.hierarchy.call.JavaCallHierarchyData;
 import com.intellij.ide.util.treeView.NodeDescriptor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Pair;
 import com.intellij.psi.*;
 import com.intellij.psi.util.PsiUtil;
 import com.intellij.psi.util.TypeConversionUtil;
@@ -39,7 +40,7 @@ public class GrCallReferenceProcessor implements CallReferenceProcessor {
     Set<PsiMethod> methodsToFind = data.getMethodsToFind();
     PsiMethod methodToFind = data.getMethodToFind();
     PsiClassType originalType = data.getOriginalType();
-    Map<PsiMember, NodeDescriptor> methodToDescriptorMap = data.getResultMap();
+    Map<Pair<PsiMember, PsiType>, NodeDescriptor> methodToDescriptorMap = data.getResultMap();
     Project project = data.getProject();
 
     if (reference instanceof GrReferenceExpression) {
@@ -86,7 +87,7 @@ public class GrCallReferenceProcessor implements CallReferenceProcessor {
     }
 
     final PsiElement element = reference.getElement();
-    final PsiMember key = CallHierarchyNodeDescriptor.getEnclosingElement(element);
+    final Pair<PsiMember, PsiType> key = Pair.pair( CallHierarchyNodeDescriptor.getEnclosingElement(element), null);
 
     synchronized (methodToDescriptorMap) {
       CallHierarchyNodeDescriptor d = (CallHierarchyNodeDescriptor)methodToDescriptorMap.get(key);

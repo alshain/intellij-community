@@ -1,0 +1,9 @@
+<!-- Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file. -->
+<node text="InterestingProcessor.processItem()  ()" base="true">
+  <node text="Processor.processAll()  ()">
+    <node text="Processor.processAllIndirect()(2 usages)  ()">
+      <node text="User.interestingUse()  ()"/>
+      <node text="User.interestingUseAlso()  ()"/>
+    </node>
+  </node>
+</node>

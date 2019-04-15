@@ -17,8 +17,11 @@ package com.intellij.ide.hierarchy.call;
 
 import com.intellij.ide.util.treeView.NodeDescriptor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Conditions;
+import com.intellij.openapi.util.Pair;
 import com.intellij.psi.*;
 import com.intellij.psi.impl.light.LightMemberReference;
+import com.intellij.psi.util.InheritanceUtil;
 import com.intellij.psi.util.PsiUtil;
 import com.intellij.psi.util.TypeConversionUtil;
 import org.jetbrains.annotations.NotNull;
@@ -34,9 +37,11 @@ public class JavaCallReferenceProcessor implements CallReferenceProcessor {
     Set<PsiMethod> methodsToFind = data.getMethodsToFind();
     PsiMethod methodToFind = data.getMethodToFind();
     PsiClassType originalType = data.getOriginalType();
-    Map<PsiMember, NodeDescriptor> methodToDescriptorMap = data.getResultMap();
+    Map<Pair<PsiMember, PsiType>, NodeDescriptor> methodToDescriptorMap = data.getResultMap();
     Project myProject = data.getProject();
 
+    CallHierarchyNodeDescriptor parentDescriptor = (CallHierarchyNodeDescriptor) data.getNodeDescriptor();
+    boolean passInstanceCallInfo = false;
     if (reference instanceof PsiReferenceExpression) {
       final PsiExpression qualifier = ((PsiReferenceExpression)reference).getQualifierExpression();
       if (qualifier instanceof PsiSuperExpression) { // filter super.foo() call inside foo() and similar cases (bug 8411)
@@ -55,6 +60,28 @@ public class JavaCallReferenceProcessor implements CallReferenceProcessor {
             final PsiMethod callee = psiClass.findMethodBySignature(methodToFind, true);
             if (callee != null && !methodsToFind.contains(callee)) {
               // skip sibling methods
+              return false;
+            }
+          }
+        }
+        if (parentDescriptor.dataFromInstanceCall != null) {
+          if (parentDescriptor.dataFromInstanceCall.getOriginalClass().isInheritor(originalClass, true)) {
+            if (qualifierType instanceof PsiClassType &&
+            !TypeConversionUtil.isAssignable(qualifierType, parentDescriptor.dataFromInstanceCall.getOriginalType())) {
+              return false;
+            }
+          }
+        }
+      }
+      if (qualifier == null || qualifier instanceof PsiThisExpression) {
+        passInstanceCallInfo = true;
+        if (parentDescriptor.dataFromInstanceCall != null) {
+          PsiClass instance = InheritanceUtil.findEnclosingInstanceInScope(method.getContainingClass(), (PsiReferenceExpression)reference, Conditions.alwaysTrue(), false);
+
+          if (instance != null) {
+            if (!instance.equals(parentDescriptor.dataFromInstanceCall.getOriginalClass()) &&
+                !instance.isInheritor(parentDescriptor.dataFromInstanceCall.getOriginalClass(), true) &&
+                !parentDescriptor.dataFromInstanceCall.getOriginalClass().isInheritor(instance, true)) {
               return false;
             }
           }
@@ -82,9 +109,29 @@ public class JavaCallReferenceProcessor implements CallReferenceProcessor {
       }
     }
 
+    PsiType instanceType;
+    if (passInstanceCallInfo) {
+      if (parentDescriptor.dataFromInstanceCall != null) {
+        instanceType = parentDescriptor.dataFromInstanceCall.getOriginalType();
+      } else {
+        instanceType = originalType;
+      }
+    } else {
+      instanceType = null;
+    }
+
     final PsiElement element = reference.getElement();
-    final PsiMember key = CallHierarchyNodeDescriptor.getEnclosingElement(element);
-    CallHierarchyNodeDescriptor parentDescriptor = (CallHierarchyNodeDescriptor) data.getNodeDescriptor();
+
+    // Within the same *node*,
+    // calls to the same method get one child-node per key
+    // it's possible that the same method is reachable via different known instance types
+
+    // This version makes separate nodes for each method for each instance type
+    //   (Note: Very limited based on identity of "instanceDataToPass", could be enhanced further)
+    // final Pair<PsiMember, PsiType> key = Pair.pair(CallHierarchyNodeDescriptor.getEnclosingElement(element), instanceType);
+    // This version will only prune call-targets if all call-sites are reached "via the same instanceDataToPass"
+    final Pair<PsiMember, PsiType> key = Pair.pair(CallHierarchyNodeDescriptor.getEnclosingElement(element), null);
+
     {
       // detect recursion
       // the current call-site calls *method*
@@ -106,16 +153,37 @@ public class JavaCallReferenceProcessor implements CallReferenceProcessor {
       }
     }
 
+    JavaCallHierarchyData instanceDataToPass;
+    if (!passInstanceCallInfo) {
+      instanceDataToPass = null;
+    } else if (parentDescriptor.dataFromInstanceCall != null) {
+      instanceDataToPass = parentDescriptor.dataFromInstanceCall;
+    } else {
+      instanceDataToPass = data;
+    }
+
+    boolean nodeExistsAlready = true;
     synchronized (methodToDescriptorMap) {
       CallHierarchyNodeDescriptor d = (CallHierarchyNodeDescriptor)methodToDescriptorMap.get(key);
       if (d == null) {
+        nodeExistsAlready = false;
         d = new CallHierarchyNodeDescriptor(myProject, parentDescriptor, element, false, true);
         methodToDescriptorMap.put(key, d);
+        d.dataFromInstanceCall = instanceDataToPass;
+
       }
       else if (!d.hasReference(reference)) {
         d.incrementUsageCount();
       }
       d.addReference(reference);
+
+      if (nodeExistsAlready) {
+        // node existed already, unless exact same data is already assigned, we need to clear the data
+        // because the same node is invoked from different contexts with respect to the instance data
+        if (d.dataFromInstanceCall != instanceDataToPass) {
+          d.dataFromInstanceCall = null;
+        }
+      }
     }
     return false;
   }

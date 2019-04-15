@@ -1,0 +1,8 @@
+<!-- Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file. -->
+<node text="B.m()  ()" base="true">
+  <node text="B.foo()  ()">
+    <node text="D.b(B)  ()"/>
+    <node text="A.iCallFoo()  ()"/>
+    <node text="D.a(A)  ()"/>
+  </node>
+</node>
